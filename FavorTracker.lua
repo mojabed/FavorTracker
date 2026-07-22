@@ -293,10 +293,10 @@ local function SlashHandler(args)
     end
 end
 
-SLASH_COMMANDS["/favortracker"] = SlashHandler
-
 local function OnAddOnLoaded(_, addonName)
     if addonName ~= "FavorTracker" then return end
+
+    SLASH_COMMANDS["/favortracker"] = SlashHandler
 
     FavorTracker.sv = ZO_SavedVars:New(
         "FavorTracker_SavedVars",
