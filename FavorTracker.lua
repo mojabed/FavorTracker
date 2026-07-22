@@ -3,7 +3,7 @@
 
 -- Slash commands (type in chat): /favortracker show|hide|toggle|reset|lock|unlock
 
-FavorTracker = {}
+local FavorTracker = {}
 
 local DAILY_RESET_HOUR_UTC = 10
 local RESET_OFFSET_SECONDS = DAILY_RESET_HOUR_UTC * 3600
@@ -25,8 +25,6 @@ local defaults = {
 
 FavorTracker.activeIndices = {}
 FavorTracker.uiReady = false
-FavorTracker.menuHidden = false
-FavorTracker.inMenu = false
 
 local function GetServerDay()
     return math.floor((GetTimeStamp() - RESET_OFFSET_SECONDS) / 86400)
@@ -367,7 +365,17 @@ local function OnAddOnLoaded(_, addonName)
 
     ScanJournalForFavors()
 
-    EVENT_MANAGER:RegisterForUpdate("FavorTracker_MenuCheck", 250, function()
+    -- Track if the tracker window was visible before the HUD was hidden
+    local wasVisibleBeforeMenu = false
+
+    local function OnHudHiding()
+        local w = FavorTracker.window
+        if not w then return end
+        wasVisibleBeforeMenu = not w:IsHidden()
+        w:SetHidden(true)
+    end
+
+    local function OnHudShowing()
         local w = FavorTracker.window
         if not w then return end
 
@@ -376,26 +384,38 @@ local function OnAddOnLoaded(_, addonName)
             RefreshChecklist()
             if not FavorTracker.sv.isHidden then
                 w:SetHidden(false)
+                wasVisibleBeforeMenu = false
+                return
             end
         end
 
-        local cur = SCENE_MANAGER:GetCurrentScene()
-        local inMenu = cur and cur:GetName() ~= "hud" and cur:GetName() ~= "hudui"
-
-        if inMenu and not FavorTracker.inMenu then
-            FavorTracker.inMenu = true
-            FavorTracker.menuHidden = not w:IsHidden()
-            w:SetHidden(true)
-        elseif not inMenu and FavorTracker.inMenu then
-            FavorTracker.inMenu = false
-            if FavorTracker.menuHidden then
-                FavorTracker.menuHidden = false
-                if not AllQuestsComplete() and not FavorTracker.sv.isHidden then
-                    w:SetHidden(false)
-                end
-            end
+        if wasVisibleBeforeMenu and not AllQuestsComplete() and not FavorTracker.sv.isHidden then
+            w:SetHidden(false)
         end
-    end)
+        wasVisibleBeforeMenu = false
+    end
+
+    local hudScene = SCENE_MANAGER:GetScene("hud")
+    if hudScene then
+        hudScene:RegisterCallback("StateChange", function(_, newState)
+            if newState == SCENE_HIDING then
+                OnHudHiding()
+            elseif newState == SCENE_SHOWING then
+                OnHudShowing()
+            end
+        end)
+    end
+
+    local hudUIScene = SCENE_MANAGER:GetScene("hudui")
+    if hudUIScene then
+        hudUIScene:RegisterCallback("StateChange", function(_, newState)
+            if newState == SCENE_HIDING then
+                OnHudHiding()
+            elseif newState == SCENE_SHOWING then
+                OnHudShowing()
+            end
+        end)
+    end
 
     d("[FavorTracker] Loaded. Tracking " .. #sv.quests .. " daily favors.  /favortracker for help.")
 end
