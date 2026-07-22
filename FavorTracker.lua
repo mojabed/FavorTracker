@@ -29,7 +29,7 @@ FavorTracker.menuHidden = false
 FavorTracker.inMenu = false
 
 local function GetServerDay()
-    return math.floor((GetDate() - RESET_OFFSET_SECONDS) / 86400)
+    return math.floor((GetTimeStamp() - RESET_OFFSET_SECONDS) / 86400)
 end
 
 local function CheckDailyReset()
@@ -37,6 +37,8 @@ local function CheckDailyReset()
     local today = GetServerDay()
 
     if sv.lastResetDay ~= today then
+        d(string.format("[FavorTracker] New day detected (day %d -> %d). Resetting checklist.",
+            sv.lastResetDay or -1, today))
         for i = 1, #sv.quests do
             sv.quests[i].completed = false
         end
@@ -368,6 +370,14 @@ local function OnAddOnLoaded(_, addonName)
     EVENT_MANAGER:RegisterForUpdate("FavorTracker_MenuCheck", 250, function()
         local w = FavorTracker.window
         if not w then return end
+
+        local didReset = CheckDailyReset()
+        if didReset then
+            RefreshChecklist()
+            if not FavorTracker.sv.isHidden then
+                w:SetHidden(false)
+            end
+        end
 
         local cur = SCENE_MANAGER:GetCurrentScene()
         local inMenu = cur and cur:GetName() ~= "hud" and cur:GetName() ~= "hudui"
