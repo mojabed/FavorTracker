@@ -20,6 +20,6 @@ A simple window that provides a checklist of each favor, the npc related to the 
 
 ## Compatibility
 
-- **ESO API Version:** 101041 (Gold Road)
+- **ESO API Version:** 101050
 - **Dependencies:** None
 - **Conflicts:** None known
