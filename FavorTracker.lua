@@ -298,7 +298,7 @@ local function OnAddOnLoaded(_, addonName)
 
     SLASH_COMMANDS["/favortracker"] = SlashHandler
 
-    FavorTracker.sv = ZO_SavedVars:New(
+    FavorTracker.sv = ZO_SavedVars:NewCharacterIdSettings(
         "FavorTracker_SavedVars",
         1,
         nil,
