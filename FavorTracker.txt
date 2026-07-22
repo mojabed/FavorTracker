@@ -2,7 +2,7 @@
 ## Description: Tracks daily Favor quest completions from Freerunner Post Boards.
 ## Author: Xpherion
 ## Version: 1.0.0
-## APIVersion: 101041
+## APIVersion: 101050
 
 ## SavedVariables: FavorTracker_SavedVars
 
