@@ -365,7 +365,7 @@ local function OnAddOnLoaded(_, addonName)
 
     ScanJournalForFavors()
 
-    -- Track if the tracker window was visible before the HUD was hidden
+    -- Track if window was visible before HUD was hidden
     local wasVisibleBeforeMenu = false
 
     local function OnHudHiding()
