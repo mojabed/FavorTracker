@@ -1,5 +1,8 @@
 # Favor Tracker Changelog
 
+## 1.0.2
+- Fixed folder structure inside ZIP file
+
 ## 1.0.1
 - Fixed saved vars to use `NewCharacterIdSettings`
 - Replaced `RegisterForUpdate` polling
