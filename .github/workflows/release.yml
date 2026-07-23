@@ -1,0 +1,36 @@
+name: Release to ESOUI
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version and compatibility from manifest
+        id: manifest
+        run: |
+          VERSION=$(grep '## Version:' FavorTracker.txt | sed 's/## Version: *//')
+          APIVERSION=$(grep '## APIVersion:' FavorTracker.txt | sed 's/## APIVersion: *//')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "apiversion=$APIVERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION, API: $APIVERSION"
+
+      - name: Create zip
+        run: |
+          mkdir -p /tmp/FavorTracker
+          cp FavorTracker.lua FavorTracker.txt README.md /tmp/FavorTracker/
+          cd /tmp && zip -r ${{ github.workspace }}/FavorTracker.zip FavorTracker
+
+      - name: Upload to ESOUI
+        uses: m00nyONE/esoui-upload@v2
+        with:
+          api_key: ${{ secrets.ESOUI_API_KEY }}
+          addon_id: '4717'
+          version: ${{ steps.manifest.outputs.version }}
+          zip_file: FavorTracker.zip
+          compatibility: ${{ steps.manifest.outputs.apiversion }}
