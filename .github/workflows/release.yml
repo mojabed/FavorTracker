@@ -3,6 +3,8 @@ name: Release to ESOUI
 on:
   push:
     branches: [main]
+    paths:
+      - 'FavorTracker.txt'
   workflow_dispatch:
 
 jobs:
@@ -11,19 +13,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Read version and compatibility from manifest
+      - name: Read version from manifest
         id: manifest
         run: |
           VERSION=$(grep '## Version:' FavorTracker.txt | sed 's/## Version: *//')
-          APIVERSION=$(grep '## APIVersion:' FavorTracker.txt | sed 's/## APIVersion: *//')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "apiversion=$APIVERSION" >> $GITHUB_OUTPUT
-          echo "Version: $VERSION, API: $APIVERSION"
+          echo "Version: $VERSION"
 
       - name: Create zip
         run: |
           mkdir -p /tmp/FavorTracker
-          cp FavorTracker.lua FavorTracker.txt README.md /tmp/FavorTracker/
+          cp FavorTracker.lua FavorTracker.txt README.md CHANGELOG.md /tmp/FavorTracker/
           cd /tmp && zip -r ${{ github.workspace }}/FavorTracker.zip FavorTracker
 
       - name: Upload to ESOUI
@@ -33,4 +33,5 @@ jobs:
           addon_id: '4717'
           version: ${{ steps.manifest.outputs.version }}
           zip_file: FavorTracker.zip
-          compatibility: ${{ steps.manifest.outputs.apiversion }}
+          changelog_file: 'CHANGELOG.md'
+          compatibility: '12.0.7'
