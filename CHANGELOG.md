@@ -1,5 +1,8 @@
 # Favor Tracker Changelog
 
+## 1.0.4
+- Overrides fragment show to prevent menus opening the checklist after it's been hidden 
+
 ## 1.0.3
 - Fixed edge case when quests were not being correctly tracked for completion
 - Swapped from scene callbacks to fragments for hiding/showing

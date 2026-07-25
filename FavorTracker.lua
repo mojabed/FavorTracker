@@ -384,15 +384,17 @@ local function OnAddOnLoaded(_, addonName)
     SCENE_MANAGER:GetScene("hud"):AddFragment(hudFragment)
     SCENE_MANAGER:GetScene("hudui"):AddFragment(hudFragment)
 
-    hudFragment:RegisterCallback("OnShow", function()
+    local fragShow = hudFragment.Show
+    hudFragment.Show = function(self, ...)
         local didReset = CheckDailyReset()
         if didReset then
             RefreshChecklist()
         end
         if FavorTracker.sv.isHidden or AllQuestsComplete() then
-            FavorTracker.window:SetHidden(true)
+            return  -- manually hidden or all quests done
         end
-    end)
+        return fragShow(self, ...)
+    end
 
     d("[FavorTracker] Loaded. Tracking " .. #sv.quests .. " daily favors.  /favortracker for help.")
 end
