@@ -1,5 +1,10 @@
 # Favor Tracker Changelog
 
+## 1.0.3
+- Fixed edge case when quests were not being correctly tracked for completion
+- Swapped from scene callbacks to fragments for hiding/showing
+- Fixed tracking checklist visibility between sessions and after a daily reset
+
 ## 1.0.2
 - Fixed folder structure inside ZIP file
 
