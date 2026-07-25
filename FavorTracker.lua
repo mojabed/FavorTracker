@@ -24,6 +24,7 @@ local defaults = {
 }
 
 FavorTracker.activeIndices = {}
+FavorTracker.questIdToEntry = {}
 FavorTracker.uiReady = false
 
 local function GetServerDay()
@@ -41,6 +42,7 @@ local function CheckDailyReset()
             sv.quests[i].completed = false
         end
         sv.lastResetDay = today
+        sv.isHidden = false
         return true
     end
     return false
@@ -208,7 +210,7 @@ local function CreateUI()
     FavorTracker.uiReady = true
 end
 
-local function OnQuestAdded(_, journalIndex, questName, _)
+local function OnQuestAdded(_, journalIndex, questName, _, _, questId, _)
     local questType = GetJournalQuestType(journalIndex)
     if questType ~= QUEST_TYPE_FAVOR then return end
 
@@ -218,21 +220,34 @@ local function OnQuestAdded(_, journalIndex, questName, _)
         local matchLower = string.lower(sv.quests[i].matchName)
         if matchLower ~= "" and string.find(nameLower, matchLower, 1, true) then
             FavorTracker.activeIndices[journalIndex] = i
+            if questId then
+                FavorTracker.questIdToEntry[questId] = i
+            end
             return
         end
     end
 end
 
-local function OnQuestRemoved(_, completed, questIndex, _, _, _, _)
+local function OnQuestRemoved(_, completed, questIndex, _, _, questId, _)
     if not completed then return end
 
-    local entryIdx = FavorTracker.activeIndices[questIndex]
+    local sv = FavorTracker.sv
+
+    local entryIdx = FavorTracker.questIdToEntry[questId]
+
+    -- journal index for quests that were in the journal
+    -- before the addon loaded, e.g. after a /reloadui
+    if not entryIdx then
+        entryIdx = FavorTracker.activeIndices[questIndex]
+    end
+
     if not entryIdx then return end
 
     FavorTracker.activeIndices[questIndex] = nil
+    FavorTracker.questIdToEntry[questId] = nil
+
     CheckDailyReset()
 
-    local sv = FavorTracker.sv
     if sv.quests[entryIdx].completed then return end
 
     sv.quests[entryIdx].completed = true
@@ -365,57 +380,19 @@ local function OnAddOnLoaded(_, addonName)
 
     ScanJournalForFavors()
 
-    -- Track if window was visible before HUD was hidden
-    local wasVisibleBeforeMenu = false
+    local hudFragment = ZO_HUDFadeSceneFragment:New(FavorTracker.window)
+    SCENE_MANAGER:GetScene("hud"):AddFragment(hudFragment)
+    SCENE_MANAGER:GetScene("hudui"):AddFragment(hudFragment)
 
-    local function OnHudHiding()
-        local w = FavorTracker.window
-        if not w then return end
-        wasVisibleBeforeMenu = not w:IsHidden()
-        w:SetHidden(true)
-    end
-
-    local function OnHudShowing()
-        local w = FavorTracker.window
-        if not w then return end
-
+    hudFragment:RegisterCallback("OnShow", function()
         local didReset = CheckDailyReset()
         if didReset then
             RefreshChecklist()
-            if not FavorTracker.sv.isHidden then
-                w:SetHidden(false)
-                wasVisibleBeforeMenu = false
-                return
-            end
         end
-
-        if wasVisibleBeforeMenu and not AllQuestsComplete() and not FavorTracker.sv.isHidden then
-            w:SetHidden(false)
+        if FavorTracker.sv.isHidden or AllQuestsComplete() then
+            FavorTracker.window:SetHidden(true)
         end
-        wasVisibleBeforeMenu = false
-    end
-
-    local hudScene = SCENE_MANAGER:GetScene("hud")
-    if hudScene then
-        hudScene:RegisterCallback("StateChange", function(_, newState)
-            if newState == SCENE_HIDING then
-                OnHudHiding()
-            elseif newState == SCENE_SHOWING then
-                OnHudShowing()
-            end
-        end)
-    end
-
-    local hudUIScene = SCENE_MANAGER:GetScene("hudui")
-    if hudUIScene then
-        hudUIScene:RegisterCallback("StateChange", function(_, newState)
-            if newState == SCENE_HIDING then
-                OnHudHiding()
-            elseif newState == SCENE_SHOWING then
-                OnHudShowing()
-            end
-        end)
-    end
+    end)
 
     d("[FavorTracker] Loaded. Tracking " .. #sv.quests .. " daily favors.  /favortracker for help.")
 end
