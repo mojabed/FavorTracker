@@ -1,5 +1,9 @@
 # Favor Tracker Changelog
 
+## 1.0.5
+- Fixes adding/removing quests in the journal; should properly mark complete in edge cases
+- Adjusted cleanup for quest indicies
+
 ## 1.0.4
 - Overrides fragment show to prevent menus opening the checklist after it's been hidden 
 
