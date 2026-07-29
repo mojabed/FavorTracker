@@ -210,7 +210,7 @@ local function CreateUI()
     FavorTracker.uiReady = true
 end
 
-local function OnQuestAdded(_, journalIndex, questName, _, _, questId, _)
+local function OnQuestAdded(_, journalIndex, questName, _)
     local questType = GetJournalQuestType(journalIndex)
     if questType ~= QUEST_TYPE_FAVOR then return end
 
@@ -220,31 +220,47 @@ local function OnQuestAdded(_, journalIndex, questName, _, _, questId, _)
         local matchLower = string.lower(sv.quests[i].matchName)
         if matchLower ~= "" and string.find(nameLower, matchLower, 1, true) then
             FavorTracker.activeIndices[journalIndex] = i
-            if questId then
-                FavorTracker.questIdToEntry[questId] = i
+            local qid = GetJournalQuestId(journalIndex)
+            if qid and qid ~= 0 then
+                FavorTracker.questIdToEntry[qid] = i
             end
             return
         end
     end
 end
 
-local function OnQuestRemoved(_, completed, questIndex, _, _, questId, _)
-    if not completed then return end
+local function OnQuestRemoved(_, isCompleted, journalIndex, questName, _, _, questID)
+    if not isCompleted then return end
 
     local sv = FavorTracker.sv
 
-    local entryIdx = FavorTracker.questIdToEntry[questId]
+    local entryIdx = FavorTracker.questIdToEntry[questID]
 
-    -- journal index for quests that were in the journal
-    -- before the addon loaded, e.g. after a /reloadui
+    if not entryIdx and questName then
+        local nameLower = string.lower(questName)
+        for i = 1, #sv.quests do
+            if not sv.quests[i].completed then
+                local matchLower = string.lower(sv.quests[i].matchName)
+                if matchLower ~= "" and string.find(nameLower, matchLower, 1, true) then
+                    entryIdx = i
+                    break
+                end
+            end
+        end
+    end
+
     if not entryIdx then
-        entryIdx = FavorTracker.activeIndices[questIndex]
+        entryIdx = FavorTracker.activeIndices[journalIndex]
     end
 
     if not entryIdx then return end
 
-    FavorTracker.activeIndices[questIndex] = nil
-    FavorTracker.questIdToEntry[questId] = nil
+    for qi, ei in pairs(FavorTracker.activeIndices) do
+        if ei == entryIdx then
+            FavorTracker.activeIndices[qi] = nil
+        end
+    end
+    FavorTracker.questIdToEntry[questID] = nil
 
     CheckDailyReset()
 
